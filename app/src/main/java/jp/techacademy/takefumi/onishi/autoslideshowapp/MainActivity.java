@@ -7,10 +7,11 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Bundle;
+import android.os.Handler;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -18,11 +19,13 @@ import android.widget.Toast;
 
 import java.util.ArrayList;
 
-
 public class MainActivity extends AppCompatActivity {
     private static final int PERMISSIONS_REQUEST_CODE = 100;
+    private static final int DELAY_TIME = 2000;
     ArrayList<Uri> imageUris = new ArrayList<>();
-    int pages=1;
+    int pages = 1;
+    boolean onOff = true;
+    Handler _handler = new Handler();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,8 +33,10 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         Button buttonBack = (Button) findViewById(R.id.buttonback);
-        if (permissionCheck()){
+        if (permissionCheck()) {
             slideCreate();
+            ImageView imageView = (ImageView) findViewById(R.id.image);
+            imageView.setImageURI(imageUris.get(pages));
         }
 
         buttonBack.setOnClickListener(new View.OnClickListener() {
@@ -45,13 +50,20 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
-        Button buttonPlay = (Button) findViewById(R.id.buttonplay);
+        final Button buttonPlay = (Button) findViewById(R.id.buttonplay);
         buttonPlay.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 if (view.getId() == R.id.buttonplay) {
                     if (permissionCheck()) {
-                        viewPlay();
+                        if (onOff) {
+                            buttonPlay.setText(R.string.stop);
+                            viewPlay();
+                        } else {
+                            buttonPlay.setText(R.string.start);
+                            _handler.removeCallbacksAndMessages(null);
+                        }
+                        onOff = !onOff;
                     }
                 }
             }
@@ -69,45 +81,60 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+
     public void viewBack() {
-
-
-
-        Toast toast = Toast.makeText(MainActivity.this,pages+"枚目", Toast.LENGTH_SHORT);
-        toast.show();
-        ImageView imageView=(ImageView)findViewById(R.id.image);
-        imageView.setImageURI(imageUris.get(pages));
-
-        --pages;
-        if (pages==0){
-            pages=imageUris.size()-1;
+        if (!onOff) {
+            Toast toast = Toast.makeText(MainActivity.this, "スライドショー中はこの操作は無効です", Toast.LENGTH_SHORT);
+            toast.show();
+            return;
         }
+        --pages;
+        if (pages == 0) {
+            pages = imageUris.size() - 1;
+        }
+
+//        Toast toast = Toast.makeText(MainActivity.this, pages + "枚目", Toast.LENGTH_SHORT);
+//        toast.show();
+        ImageView imageView = (ImageView) findViewById(R.id.image);
+        imageView.setImageURI(imageUris.get(pages));
 
     }
 
     public void viewNext() {
-
-        Toast toast = Toast.makeText(MainActivity.this,pages+"枚目", Toast.LENGTH_SHORT);
-        toast.show();
-        ImageView imageView=(ImageView)findViewById(R.id.image);
-        imageView.setImageURI(imageUris.get(pages));
-
-        ++pages;
-        if (pages==imageUris.size()){
-            pages=1;
+        if (!onOff) {
+            Toast toast = Toast.makeText(MainActivity.this, "スライドショー中はこの操作は無効です", Toast.LENGTH_SHORT);
+            toast.show();
+            return;
         }
+        ++pages;
+        if (pages == imageUris.size()) {
+            pages = 1;
+        }
+//        Toast toast = Toast.makeText(MainActivity.this, pages + "枚目", Toast.LENGTH_SHORT);
+//        toast.show();
+        ImageView imageView = (ImageView) findViewById(R.id.image);
+        imageView.setImageURI(imageUris.get(pages));
 
     }
 
     public void viewPlay() {
 
+        _handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
 
-        --pages;
-        if (pages==0){
-            pages=imageUris.size();
-        }
-        Toast toast = Toast.makeText(MainActivity.this, "viewPlay"+pages, Toast.LENGTH_SHORT);
-        toast.show();
+                ++pages;
+                if (pages == imageUris.size()) {
+                    pages = 1;
+                }
+//                Toast toast = Toast.makeText(MainActivity.this, pages + "枚目", Toast.LENGTH_SHORT);
+//                toast.show();
+                ImageView imageView = (ImageView) findViewById(R.id.image);
+                imageView.setImageURI(imageUris.get(pages));
+
+                _handler.postDelayed(this, DELAY_TIME);
+            }
+        }, DELAY_TIME);
     }
 
     private void slideCreate() {
